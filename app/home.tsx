@@ -10,20 +10,22 @@ import {
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import * as DocumentPicker from 'expo-document-picker';
-
 import { useTheme } from '@/hooks/useTheme';
 import { useAnimatedValue } from '@/hooks/useAnimatedValue';
 import { ANIMATION_PRESETS } from '@/utils/animationUtils';
 import { CATEGORY_ICONS } from '@/constants/icons';
-
-// Import components
 import SearchBar from '@/components/ui/SearchBar';
 import CategoryList from '@/components/ui/CategoryList';
 import DocumentList from '@/components/document/DocumentList';
 import FloatingActionButton from '@/components/ui/FloatingActionButton';
+interface documentCategoriesType {
+	id: string;
+	name: string;
+	icon: any;
+	color: any;
+}
 
-// Mock categories for now - we'll replace this with dynamic data later
-const documentCategories = [
+const documentCategories: documentCategoriesType[] = [
 	{
 		id: 'recent',
 		name: 'Recent',
