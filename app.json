@@ -1,37 +1,51 @@
 {
-	"expo": {
-		"name": "Document Reader",
-		"slug": "document-reader",
-		"version": "1.0.0",
-		"orientation": "portrait",
-		"icon": "./assets/icon.png",
-		"userInterfaceStyle": "light",
-		"updates": {
-			"fallbackToCacheTimeout": 0
-		},
-		"assetBundlePatterns": ["**/*"],
-		"ios": {
-			"supportsTablet": true
-		},
-		"android": {
-			"adaptiveIcon": {
-				"foregroundImage": "./assets/adaptive-icon.png",
-				"backgroundColor": "#ffffff"
-			}
-		},
-
-		"plugins": [
-			["expo-router"],
-			[
-				"expo-splash-screen",
-				{
-					"backgroundColor": "#232323",
-					"image": "./assets/splash.png",
-					"resizeMode": "contain",
-					"imageWidth": 200
-				}
-			]
-		],
-		"scheme": "document-reader"
-	}
+  "expo": {
+    "name": "Document Reader",
+    "slug": "document-reader",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "updates": {
+      "fallbackToCacheTimeout": 0,
+      "url": "https://u.expo.dev/63874685-4bd9-47cc-ab40-08d48d76d031"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      }
+    },
+    "plugins": [
+      [
+        "expo-router"
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#232323",
+          "image": "./assets/splash.png",
+          "resizeMode": "contain",
+          "imageWidth": 200
+        }
+      ],
+      "expo-font"
+    ],
+    "scheme": "document-reader",
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "63874685-4bd9-47cc-ab40-08d48d76d031"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    }
+  }
 }
