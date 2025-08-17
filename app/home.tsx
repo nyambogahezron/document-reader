@@ -9,11 +9,14 @@ import {
 	Animated,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { router } from 'expo-router';
 import * as DocumentPicker from 'expo-document-picker';
 import { useTheme } from '@/hooks/useTheme';
 import { useAnimatedValue } from '@/hooks/useAnimatedValue';
 import { ANIMATION_PRESETS } from '@/utils/animationUtils';
 import { CATEGORY_ICONS } from '@/constants/icons';
+import { DocumentService } from '@/services/DocumentService';
+import { DocumentInfo, Colors } from '@/types';
 import SearchBar from '@/components/ui/SearchBar';
 import CategoryList from '@/components/ui/CategoryList';
 import DocumentList from '@/components/document/DocumentList';
@@ -70,35 +73,30 @@ const documentCategories: documentCategoriesType[] = [
 	},
 ];
 
-// Home Screen Component
 export default function HomeScreen() {
 	const { colors } = useTheme();
-	const [refreshing, setRefreshing] = useState(false);
-	const [searchQuery, setSearchQuery] = useState('');
-	const [recentDocuments, setRecentDocuments] = useState([]);
-	const [selectedCategory, setSelectedCategory] = useState('recent');
-	const [isLoading, setIsLoading] = useState(true);
+	const [refreshing, setRefreshing] = useState<boolean>(false);
+	const [searchQuery, setSearchQuery] = useState<string>('');
+	const [recentDocuments, setRecentDocuments] = useState<DocumentInfo[]>([]);
+	const [selectedCategory, setSelectedCategory] = useState<string>('recent');
+	const [isLoading, setIsLoading] = useState<boolean>(true);
 
-	// Animation values
 	const headerOpacity = useAnimatedValue(0);
 	const contentTranslateY = useAnimatedValue(30);
 
 	const styles = makeStyles(colors);
 
-	// Animate components when screen loads
 	useEffect(() => {
 		Animated.stagger(200, [
 			ANIMATION_PRESETS.fadeIn(headerOpacity),
 			ANIMATION_PRESETS.slideInUp(contentTranslateY, 30),
 		]).start();
 
-		// Simulate loading data
 		setTimeout(() => {
 			setIsLoading(false);
 		}, 1000);
 	}, []);
 
-	// Refresh data when screen is focused
 	useFocusEffect(
 		useCallback(() => {
 			loadRecentDocuments();
@@ -106,21 +104,25 @@ export default function HomeScreen() {
 		}, [])
 	);
 
-	// Load recent documents
 	const loadRecentDocuments = async () => {
-		// This would typically be loaded from a service like DocumentService
-		// For now, we'll use placeholder data
-		setRecentDocuments([]);
+		try {
+			setIsLoading(true);
+			const documents = await DocumentService.getRecentDocuments();
+			setRecentDocuments(documents);
+		} catch (error) {
+			console.error('Error loading recent documents:', error);
+			setRecentDocuments([]);
+		} finally {
+			setIsLoading(false);
+		}
 	};
 
-	// Handle pull-to-refresh
 	const onRefresh = useCallback(async () => {
 		setRefreshing(true);
 		await loadRecentDocuments();
 		setRefreshing(false);
 	}, []);
 
-	// Handle document import
 	const handleImportDocument = async () => {
 		try {
 			const result = await DocumentPicker.getDocumentAsync({
@@ -136,12 +138,13 @@ export default function HomeScreen() {
 				const asset = result.assets[0];
 				console.log('Document selected:', asset);
 
-				// Here we'd normally process the document with DocumentService
-				// For now, just navigate to the document viewer
-				navigation.navigate('DocumentViewer', {
-					uri: asset.uri,
-					name: asset.name,
-					type: asset.mimeType,
+				router.push({
+					pathname: '/document-viewer',
+					params: {
+						uri: asset.uri,
+						name: asset.name,
+						type: asset.mimeType || '',
+					},
 				});
 			}
 		} catch (error) {
@@ -149,14 +152,12 @@ export default function HomeScreen() {
 		}
 	};
 
-	// Handle search query changes
-	const handleSearch = (query) => {
+	const handleSearch = (query: string) => {
 		setSearchQuery(query);
-		// Implement search functionality
+		// TODO: Implement search functionality
 	};
 
-	// Handle category selection
-	const handleCategoryPress = (category) => {
+	const handleCategoryPress = (category: any) => {
 		setSelectedCategory(category.id);
 	};
 
@@ -167,6 +168,7 @@ export default function HomeScreen() {
 					placeholder='Search documents...'
 					value={searchQuery}
 					onChangeText={handleSearch}
+					onSubmit={handleSearch}
 				/>
 			</Animated.View>
 
@@ -193,7 +195,7 @@ export default function HomeScreen() {
 						<CategoryList
 							categories={documentCategories}
 							selectedCategory={selectedCategory}
-							onCategoryPress={handleCategoryPress}
+							onSelectCategory={handleCategoryPress}
 						/>
 					</View>
 
@@ -208,18 +210,16 @@ export default function HomeScreen() {
 									  )?.name || 'Documents'}
 							</Text>
 							{recentDocuments.length > 0 && (
-								<TouchableOpacity
-									onPress={() => navigation.navigate('FileExplorer')}
-								>
+								<TouchableOpacity onPress={() => router.push('/file-explorer')}>
 									<Text style={styles.viewAllText}>View All</Text>
 								</TouchableOpacity>
 							)}
 						</View>
 
 						<DocumentList
-							documents={recentDocuments}
+							documents={recentDocuments as any}
 							isLoading={isLoading}
-							emptyStateMessage={
+							emptyMessage={
 								selectedCategory === 'recent'
 									? "You haven't opened any documents yet"
 									: `No ${
@@ -228,18 +228,14 @@ export default function HomeScreen() {
 												?.name.toLowerCase() || 'documents'
 									  } found`
 							}
-							emptyStateIcon={
-								selectedCategory === 'recent'
-									? 'history'
-									: documentCategories.find(
-											(cat) => cat.id === selectedCategory
-									  )?.icon || 'folder'
-							}
 							onDocumentPress={(document) => {
-								navigation.navigate('DocumentViewer', {
-									uri: document.uri,
-									name: document.name,
-									type: document.type,
+								router.push({
+									pathname: '/document-viewer',
+									params: {
+										uri: document.uri,
+										name: document.name,
+										type: document.type,
+									},
 								});
 							}}
 						/>
@@ -248,15 +244,15 @@ export default function HomeScreen() {
 			</ScrollView>
 
 			<FloatingActionButton
-				icon='add'
-				onPress={handleImportDocument}
-				style={styles.fab}
+				mainIcon='add'
+				mainAction={handleImportDocument}
+				containerStyle={styles.fab}
 			/>
 		</View>
 	);
 }
 
-const makeStyles = (colors) =>
+const makeStyles = (colors: Colors) =>
 	StyleSheet.create({
 		container: {
 			flex: 1,

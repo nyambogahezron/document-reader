@@ -11,89 +11,81 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useTheme } from '../hooks/useTheme';
-import { useAnimatedValue } from '../hooks/useAnimatedValue';
-import { ANIMATION_PRESETS } from '../utils/animationUtils';
+import { useTheme } from '@/hooks/useTheme';
+import { useAnimatedValue } from '@/hooks/useAnimatedValue';
+import { ANIMATION_PRESETS } from '@/utils/animationUtils';
 import { router } from 'expo-router';
 
 const { width, height } = Dimensions.get('window');
+
+interface Slide {
+	id: string;
+	title: string;
+	description: string;
+	image: any;
+}
+
+interface HandleSlideChangeEvent {
+	nativeEvent: {
+		contentOffset: {
+			x: number;
+		};
+	};
+}
 
 const OnboardingScreen = () => {
 	const { colors, isDark } = useTheme();
 	const scrollX = useAnimatedValue(0);
 	const [currentIndex, setCurrentIndex] = useState(0);
 	const slidesRef = useRef<FlatList<Slide>>(null);
-
-	// Opacity animations for buttons
 	const skipButtonOpacity = useAnimatedValue(1);
 	const getStartedButtonScale = useAnimatedValue(0);
 
-	// Onboarding slides data
 	const slides = [
 		{
 			id: '1',
 			title: 'Organize Your Documents',
 			description:
 				'Keep all your important documents in one place, neatly organized and easy to find.',
-			image: require('../../assets/icon.png'),
+			image: require('@/assets/icon.png'),
 		},
 		{
 			id: '2',
 			title: 'Read on Any Device',
 			description:
 				'Access your documents anytime, anywhere. Read PDFs, DOCs, and more with our powerful viewer.',
-			image: require('../../assets/icon.png'),
+			image: require('@/assets/icon.png'),
 		},
 		{
 			id: '3',
 			title: 'Easy Sharing',
 			description:
 				'Share your documents with others in just a few taps. Collaboration made simple.',
-			image: require('../../assets/icon.png'),
+			image: require('@/assets/icon.png'),
 		},
 		{
 			id: '4',
 			title: 'Get Started Now',
 			description:
 				"Your document management journey begins here. Let's get started!",
-			image: require('../../assets/icon.png'),
+			image: require('@/assets/icon.png'),
 		},
 	];
-
-	// Handle slide change
-	interface Slide {
-		id: string;
-		title: string;
-		description: string;
-		image: any; // Replace `any` with the appropriate type if the image type is known
-	}
-
-	interface HandleSlideChangeEvent {
-		nativeEvent: {
-			contentOffset: {
-				x: number;
-			};
-		};
-	}
 
 	const handleSlideChange = (event: HandleSlideChangeEvent) => {
 		const contentOffsetX = event.nativeEvent.contentOffset.x;
 		const index = Math.round(contentOffsetX / width);
 		setCurrentIndex(index);
 
-		// Show or hide buttons based on slide index
 		if (index === slides.length - 1) {
-			// On last slide, show Get Started button and hide Skip button
 			ANIMATION_PRESETS.fadeOut(skipButtonOpacity).start();
 			ANIMATION_PRESETS.popIn(getStartedButtonScale).start();
 		} else {
-			// On other slides, show Skip button and hide Get Started button
 			ANIMATION_PRESETS.fadeIn(skipButtonOpacity).start();
 			ANIMATION_PRESETS.popOut(getStartedButtonScale).start();
 		}
 	};
 
-	// Navigate to next slide
 	const goToNextSlide = () => {
 		if (currentIndex < slides.length - 1) {
 			if (slidesRef.current) {
@@ -102,12 +94,10 @@ const OnboardingScreen = () => {
 		}
 	};
 
-	// Skip to main app
 	const skipToMain = () => {
 		router.push('/home');
 	};
 
-	// Render individual slide
 	const renderSlide = ({ item }: { item: Slide }) => {
 		return (
 			<View
@@ -122,12 +112,10 @@ const OnboardingScreen = () => {
 		);
 	};
 
-	// Render pagination dots
 	const renderPagination = () => {
 		return (
 			<View style={styles.paginationContainer}>
 				{slides.map((_, index) => {
-					// Create animated styles for dots
 					const inputRange = [
 						(index - 1) * width,
 						index * width,

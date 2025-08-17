@@ -6,30 +6,40 @@ import {
 	TouchableOpacity,
 	Animated,
 	Alert,
+	ActivityIndicator,
 } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { getDocumentTypeIcon } from '../constants/icons';
-import { useTheme } from '../hooks/useTheme';
-import { useAnimatedValue } from '../hooks/useAnimatedValue';
-import { ANIMATION_PRESETS } from '../utils/animationUtils';
-import { getFileExtension } from '../utils/fileFormatUtils';
-import { useRoute } from '@react-navigation/native';
+import { useRoute, useNavigation } from '@react-navigation/native';
+import { getDocumentTypeIcon } from '@/constants/icons';
+import { useTheme } from '@/hooks/useTheme';
+import { useAnimatedValue } from '@/hooks/useAnimatedValue';
+import { ANIMATION_PRESETS } from '@/utils/animationUtils';
+import { getFileExtension } from '@/utils/fileFormatUtils';
+import { DocumentService } from '@/services/DocumentService';
+import DocumentViewer from '@/components/document/DocumentViewer';
+import {
+	DocumentInfo,
+	DocumentViewerParams,
+	ThemeContextType,
+	SafeAreaInsets,
+	Colors,
+} from '../types';
 
 const DocumentViewerScreen = () => {
-	const;
-
-	const { uri, name, type } = useRoute().params as any;
-	const { colors } = useTheme();
+	const { uri, name, type } = useRoute().params as DocumentViewerParams;
+	const navigation = useNavigation();
+	const { colors } = useTheme() as ThemeContextType;
 	const insets = useSafeAreaInsets();
 
 	// States
-	const [isLoading, setIsLoading] = useState(true);
-	const [showControls, setShowControls] = useState(true);
-	const [currentPage, setCurrentPage] = useState(1);
-	const [totalPages, setTotalPages] = useState(1);
-	const [isBookmarked, setIsBookmarked] = useState(false);
-	const [documentInfo, setDocumentInfo] = useState(null);
-	const [error, setError] = useState(null);
+	const [isLoading, setIsLoading] = useState<boolean>(true);
+	const [showControls, setShowControls] = useState<boolean>(true);
+	const [currentPage, setCurrentPage] = useState<number>(1);
+	const [totalPages, setTotalPages] = useState<number>(1);
+	const [isBookmarked, setIsBookmarked] = useState<boolean>(false);
+	const [documentInfo, setDocumentInfo] = useState<DocumentInfo | null>(null);
+	const [error, setError] = useState<string | null>(null);
 
 	// File extension
 	const fileExtension = getFileExtension(name || '');
@@ -54,22 +64,18 @@ const DocumentViewerScreen = () => {
 			}
 
 			try {
-				// In a real implementation, we would load document info from DocumentService
-				// For now, just simulate loading
-				setTimeout(() => {
-					setDocumentInfo({
-						name,
-						type,
-						uri,
-						size: '2.5 MB',
-						lastModified: new Date().toISOString(),
-					});
-					setIsLoading(false);
-				}, 1000);
+				// Get document info using DocumentService
+				const docInfo = await DocumentService.getDocumentInfo(uri, name, type);
+				setDocumentInfo(docInfo);
+
+				// Add to recent documents
+				await DocumentService.addToRecentDocuments(docInfo);
 
 				// Check if document is bookmarked
-				// This would typically use DocumentService.isDocumentBookmarked(uri)
-				setIsBookmarked(false);
+				const bookmarked = await DocumentService.isDocumentBookmarked(uri);
+				setIsBookmarked(bookmarked);
+
+				setIsLoading(false);
 			} catch (error) {
 				console.error('Error loading document:', error);
 				setError('Failed to load document');
@@ -81,7 +87,7 @@ const DocumentViewerScreen = () => {
 	}, [uri, name, type]);
 
 	// Handle page change
-	const handlePageChange = (page) => {
+	const handlePageChange = (page: number) => {
 		setCurrentPage(page);
 	};
 
@@ -115,7 +121,13 @@ const DocumentViewerScreen = () => {
 	// Toggle bookmark
 	const toggleBookmark = async () => {
 		try {
-			// In a real implementation, we would update bookmark status in DocumentService
+			if (isBookmarked) {
+				await DocumentService.removeBookmark(uri);
+			} else {
+				if (documentInfo) {
+					await DocumentService.addBookmark(documentInfo);
+				}
+			}
 			setIsBookmarked(!isBookmarked);
 
 			// Show feedback
@@ -129,16 +141,17 @@ const DocumentViewerScreen = () => {
 			);
 		} catch (error) {
 			console.error('Error toggling bookmark:', error);
+			Alert.alert('Error', 'Failed to update bookmark status');
 		}
 	};
 
 	// Handle share
 	const handleShare = async () => {
 		try {
-			// In a real implementation, we would share using FileSystemService
-			Alert.alert('Share', `Sharing ${name}...`);
+			await DocumentService.shareDocument(uri, name);
 		} catch (error) {
 			console.error('Error sharing document:', error);
+			Alert.alert('Error', 'Failed to share document');
 		}
 	};
 
@@ -179,7 +192,7 @@ const DocumentViewerScreen = () => {
 							<MaterialIcons
 								name={isBookmarked ? 'bookmark' : 'bookmark-border'}
 								size={24}
-								color={isBookmarked ? colors.accent : colors.primary}
+								color={isBookmarked ? colors.secondary : colors.primary}
 							/>
 						</TouchableOpacity>
 
@@ -271,10 +284,16 @@ const DocumentViewerScreen = () => {
 			>
 				<DocumentViewer
 					uri={uri}
-					type={fileExtension}
-					onPageChange={handlePageChange}
-					onLoadComplete={(total) => setTotalPages(total)}
-					onError={(error) => setError(error.message)}
+					fileName={name}
+					onLoadStart={() => setIsLoading(true)}
+					onLoadEnd={() => setIsLoading(false)}
+					onError={(error: any) =>
+						setError(error?.message || 'Failed to load document')
+					}
+					onPageChanged={(page: number, total: number) => {
+						setCurrentPage(page);
+						setTotalPages(total);
+					}}
 				/>
 			</TouchableOpacity>
 
@@ -284,7 +303,7 @@ const DocumentViewerScreen = () => {
 	);
 };
 
-const makeStyles = (colors, insets) =>
+const makeStyles = (colors: Colors, insets: SafeAreaInsets) =>
 	StyleSheet.create({
 		container: {
 			flex: 1,
@@ -333,7 +352,7 @@ const makeStyles = (colors, insets) =>
 			borderRadius: 30,
 		},
 		errorButtonText: {
-			color: colors.textInverse,
+			color: colors.text,
 			fontFamily: 'Inter_600SemiBold',
 			fontSize: 16,
 		},
