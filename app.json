@@ -1,7 +1,8 @@
 {
 	"expo": {
-		"name": "Document Reader",
+		"name": "Docs",
 		"slug": "document-reader",
+		"scheme": "document-reader",
 		"version": "1.0.0",
 		"orientation": "portrait",
 		"icon": "./assets/icon.png",
@@ -17,8 +18,8 @@
 		"android": {
 			"package": "com.documentreader.app",
 			"adaptiveIcon": {
-				"foregroundImage": "./assets/adaptive-icon.png",
-				"backgroundColor": "#ffffff"
+				"foregroundImage": "./assets/adaptive-icon/foreground.png",
+				"backgroundImage": "./assets/adaptive-icon/background.png"
 			}
 		},
 		"plugins": [
@@ -28,13 +29,11 @@
 				{
 					"backgroundColor": "#232323",
 					"image": "./assets/splash.png",
-					"resizeMode": "contain",
 					"imageWidth": 200
 				}
 			],
 			"expo-font"
 		],
-		"scheme": "document-reader",
 		"extra": {
 			"router": {},
 			"eas": {
